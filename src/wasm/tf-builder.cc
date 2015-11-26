@@ -5,6 +5,7 @@
 #include "src/compiler/common-operator.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/machine-operator.h"
+#include "src/compiler/node-matchers.h"
 #include "src/compiler/simplified-operator.h"
 
 #include "src/compiler/access-builder.h"
@@ -252,6 +253,11 @@ TFNode* TFBuilder::Binop(WasmOpcode opcode, TFNode* left, TFNode* right) {
     case kExprI32ShrS:
       op = m->Word32Sar();
       break;
+    case kExprI32Ror:
+      op = m->Word32Ror();
+      break;
+    case kExprI32Rol:
+      return MakeI32Rol(left, right);
     case kExprI32Eq:
       op = m->Word32Equal();
       break;
@@ -327,6 +333,11 @@ TFNode* TFBuilder::Binop(WasmOpcode opcode, TFNode* left, TFNode* right) {
     case kExprI64ShrS:
       op = m->Word64Sar();
       break;
+    case kExprI64Ror:
+      op = m->Word64Ror();
+      break;
+    case kExprI64Rol:
+      return MakeI64Rol(left, right);
     case kExprI64Eq:
       op = m->Word64Equal();
       break;
@@ -982,6 +993,32 @@ TFNode* TFBuilder::FromJS(TFNode* node, TFNode* context, LocalType type) {
       return nullptr;
   }
   return num;
+}
+
+TFNode* TFBuilder::MakeI32Rol(TFNode* left, TFNode* right) {
+  // Implement Rol by Ror since V8 TurboFan does not support Rol opcode.
+  // TODO: support Word32Rol opcode in TurboFan
+  DCHECK_NOT_NULL(graph);
+  compiler::Int32Matcher m(right);
+  if (m.HasValue()) {
+    return Binop(kExprI32Ror, left, graph->Int32Constant(32 - m.Value()));
+  } else {
+    return Binop(kExprI32Ror, left,
+                 Binop(kExprI32Sub, graph->Int32Constant(32), right));
+  }
+}
+
+TFNode* TFBuilder::MakeI64Rol(TFNode* left, TFNode* right) {
+  // Implement Rol by Ror since V8 TurboFan does not support Rol opcode.
+  // TODO: support Word64Rol opcode in TurboFan
+  DCHECK_NOT_NULL(graph);
+  compiler::Int64Matcher m(right);
+  if (m.HasValue()) {
+    return Binop(kExprI64Ror, left, graph->Int64Constant(64 - m.Value()));
+  } else {
+    return Binop(kExprI64Ror, left,
+                 Binop(kExprI64Sub, graph->Int64Constant(64), right));
+  }
 }
 
 TFNode* TFBuilder::Invert(TFNode* node) {

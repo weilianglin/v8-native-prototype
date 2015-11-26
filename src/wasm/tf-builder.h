@@ -108,6 +108,8 @@ struct TFBuilder {
   TFNode* MakeI32Popcnt(TFNode* input);
   TFNode* MakeI64Ctz(TFNode* input);
   TFNode* MakeI64Popcnt(TFNode* input);
+  TFNode* MakeI32Rol(TFNode* left, TFNode* right);
+  TFNode* MakeI64Rol(TFNode* left, TFNode* right);
 
   //-----------------------------------------------------------------------
   // Operations that access the linear memory.
